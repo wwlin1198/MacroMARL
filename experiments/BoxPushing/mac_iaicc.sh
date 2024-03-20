@@ -1,5 +1,4 @@
-#/bin/bash
-
+#!/bin/bash
 # Box Pushing 6x6
 for ((i=0; i<20; i++))
 do
