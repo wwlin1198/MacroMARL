@@ -22,7 +22,12 @@ Install macro_marl package:
 ```
 cd MacroMarl/
 pip install -e .
-```  
+```
+Install gym_overcooked package:
+```
+https://github.com/WeihaoTan/gym-macro-overcooked
+```
+
 
 ## Macro-Action-Based Multi-Agent Enviroments:
 
