@@ -25,7 +25,9 @@ pip install -e .
 ```
 Install gym_overcooked package:
 ```
-https://github.com/WeihaoTan/gym-macro-overcooked
+git clone https://github.com/WeihaoTan/gym-macro-overcooked
+cd gym-macro-overcooked
+pip install -e .
 ```
 
 
