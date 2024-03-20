@@ -1,4 +1,15 @@
-#/bin/bash
+#!/bin/bash
+
+# Function to handle the SIGINT signal (Ctrl+C)
+cleanup() {
+    echo "Caught SIGINT, stopping all child processes..."
+    kill $(jobs -p)
+    exit 1
+}
+
+# Set the trap to call the cleanup function on SIGINT
+trap cleanup SIGINT
+
 # Overcooked-A
 for ((i=0; i<20; i++))
 do
@@ -85,3 +96,5 @@ do
                                 --map_type=C \
                                 --step_penalty=-0.1 &
 done
+
+wait

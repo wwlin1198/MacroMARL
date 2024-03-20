@@ -1,4 +1,14 @@
-#/bin/bash
+#!/bin/bash
+
+# Function to handle the SIGINT signal (Ctrl+C)
+cleanup() {
+    echo "Caught SIGINT, stopping all child processes..."
+    kill $(jobs -p)
+    exit 1
+}
+
+# Set the trap to call the cleanup function on SIGINT
+trap cleanup SIGINT
 
 # Warehouse-A
 for ((i=0; i<20; i++))
@@ -190,3 +200,5 @@ do
                     --sample_epi \
                     --eval_policy &
 done
+
+wait

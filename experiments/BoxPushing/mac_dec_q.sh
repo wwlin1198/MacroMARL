@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Function to handle the SIGINT signal (Ctrl+C)
