@@ -42,7 +42,7 @@ do
                                 --run_id=$i & 
 done
 
-Overcooked-B
+#Overcooked-B
 for ((i=0; i<20; i++))
 do
      value_based_main.py  --save_dir='ma_hddrqn_overcooked_B' \
