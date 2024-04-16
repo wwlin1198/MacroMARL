@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import wandb
 
 from macro_marl.cores.pg_based.mac_niacc.utils import Linear_Decay, save_train_data, save_test_data, save_policies
 from macro_marl.cores.pg_based.mac_niasc.memory import Memory_epi, Memory_rand
@@ -118,9 +119,13 @@ class MacIAISC(object):
         self.etrpy_w_call = Linear_Decay(etrpy_w_stable_at, etrpy_w_start, etrpy_w_end)
        # record evaluation return
         self.eval_returns = []
+        
+        wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
+        wandb.init(project='mac-iaicc')
 
     def learn(self):
         epi_count = 0
+        sum_avg_r = 0
         if self.resume:
             epi_count, self.eval_returns = load_checkpoint(self.run_id, self.save_dir, self.controller, self.envs_runner)
 
@@ -132,6 +137,8 @@ class MacIAISC(object):
                 self.eval_returns.append(np.mean(self.envs_runner.eval_returns[-self.eval_num_epi:]))
                 self.envs_runner.eval_returns = []
                 print(f"{[self.run_id]} Finished: {epi_count}/{self.total_epi} Evaluate learned policies with averaged returns {self.eval_returns[-1]} ...", flush=True)
+                sum_avg_r += self.eval_returns[-1]
+                wandb.log({'Episode': epi_count, 'Returns': sum_avg_r})
                 # save the best policy
                 if self.eval_returns[-1] == np.max(self.eval_returns):
                     save_policies(self.run_id, self.controller.agents, self.save_dir)

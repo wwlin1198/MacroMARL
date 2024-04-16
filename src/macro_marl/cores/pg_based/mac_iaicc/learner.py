@@ -63,6 +63,7 @@ class Learner(object):
                                                     epi_lens):
 
             obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
+            breakpoint()
 
             if obs.shape[1] == 0:
                 continue

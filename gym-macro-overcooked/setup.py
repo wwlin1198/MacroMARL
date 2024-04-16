@@ -17,7 +17,7 @@ setup(
         'gym==0.17.2',
         'matplotlib==3.3.2',
         'networkx==2.5',
-        'numpy==1.24.4',
+        'numpy==1.24.3',
         'pandas==1.1.2',
         'Pillow>=8.1.1',
         'pygame==2.0.3',

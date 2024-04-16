@@ -123,7 +123,7 @@ class ParallelMacDecDDRQN(object):
         target_updating_count = 0
         step = 0
 
-        # continue training using the lastest check point
+        # continue training using the latest checkpoint
         if self.resume:
             self.team.load_check_point(self.run_id)
             step = self.team.step_count
