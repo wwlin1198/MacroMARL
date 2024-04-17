@@ -10,7 +10,7 @@ cleanup() {
 # Set the trap to call the cleanup function on SIGINT
 trap cleanup SIGINT
 
-# Box Pushing 6x6
+# Box Pushing 10x10
 for ((i=0; i<1; i++))
 do
     pg_based_main.py --save_dir='ma_iaicc_bp6' \
@@ -30,7 +30,7 @@ do
                         --eps_end=0.01 \
                         --eps_stable_at=4_000 \
                         --total_epi=40_000 \
-                        --grid_dim 6 6 \
+                        --grid_dim 10 10 \
                         --gamma=0.98 \
                         --eval_policy \
                         --sample_epi \
