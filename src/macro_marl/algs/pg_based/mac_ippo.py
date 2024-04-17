@@ -125,7 +125,6 @@ class MacIPPO(object):
                 if self.eval_returns[-1] == np.max(self.eval_returns):
                     save_policies(self.run_id, self.controller.agents, self.save_dir)
 
-            # PPO Clip Value
 
             # update eps
             eps = self.eps_call.get_value(epi_count)

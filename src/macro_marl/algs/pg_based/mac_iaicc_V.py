@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import wandb
 
 from macro_marl.cores.pg_based.mac_niacc.memory import Memory_epi, Memory_rand
 from macro_marl.cores.pg_based.mac_niacc.envs_runner import EnvsRunner
@@ -116,6 +117,9 @@ class MacIAICC(object):
         self.etrpy_w_call = Linear_Decay(etrpy_w_stable_at, etrpy_w_start, etrpy_w_end)
         # record evaluation return
         self.eval_returns = []
+        
+        wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
+        wandb.init(project='mac-iaicc')
 
     def learn(self):
         epi_count = 0

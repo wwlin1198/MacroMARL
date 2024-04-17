@@ -20,12 +20,14 @@ class Learner(object):
                  obs_last_action=False,
                  a_lr=1e-2, 
                  c_lr=1e-2,
+                 c_train_iteration=1, 
+                 c_target_update_freq=50, 
                  tau=0.01,
                  grad_clip_value=None, 
                  grad_clip_norm=None,
                  n_step_TD=0, 
                  TD_lambda=0.0,
-                 device='cpu'):
+                 device='gpu'):
 
         self.env = env
         self.n_agent = env.n_agent
@@ -35,6 +37,8 @@ class Learner(object):
 
         self.a_lr = a_lr
         self.c_lr = c_lr
+        self.c_train_iteration = c_train_iteration
+        self.c_target_update_freq = c_target_update_freq
         self.ippo_epochs = ippo_epochs
         self.ippo_clip_value = ippo_clip_value
         self.obs_last_action = obs_last_action
@@ -60,7 +64,7 @@ class Learner(object):
         dec_batches, trace_lens, epi_lens = self._squeeze_dec_exp(dec_batches, batch_size, trace_len)
 
         # PPO updates
-        for _ in range(ippo_epochs):
+        for _ in range(self.c_train_iteration):
             for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
                 
                 obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
@@ -68,24 +72,35 @@ class Learner(object):
                 if obs.shape[1] == 0:
                     continue
                 
-                action_logits = agent.actor_net(obs, eps=eps)[0]
-                # print(action_logits.size())
-                old_log_pi_a = action_logits.gather(-1, action)
-                # print(old_log_pi_a.size())
-             
-                ############################## calculate critic loss ####################################
-                Gt = self._get_bootstrap_return(reward, 
-                                torch.cat([jobs[:,0].unsqueeze(1),
-                                            n_jobs],
-                                            dim=1),
-                                terminate, 
-                                epi_len, 
-                                agent.critic_tgt_net)
-                
+            action_logits = agent.actor_net(obs, eps=eps)[0]
+            # print(action_logits.size())
+            old_log_pi_a = action_logits.gather(-1, action)
+            ##############################  calculate critic loss and optimize the critic_net ####################################
+            for _ in range(self.c_train_iteration):
+                if not self.TD_lambda:
+                    # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
+                    Gt = self._get_bootstrap_return(reward, 
+                                                    torch.cat([jobs[:,0].unsqueeze(1),
+                                                               n_jobs],
+                                                               dim=1),
+                                                    terminate, 
+                                                    epi_len, 
+                                                    agent.critic_tgt_net)
+                else:
+                    Gt = self._get_td_lambda_return(obs.shape[0], 
+                                                    trace_len, 
+                                                    epi_len, 
+                                                    reward, 
+                                                    torch.cat([jobs[:,0].unsqueeze(1),
+                                                               n_jobs],
+                                                               dim=1),
+                                                    terminate, 
+                                                    agent.critic_tgt_net)
+                    
                 V_value = agent.critic_net(jobs)[0]
 
                 # Clipped value function
-                value_clip_margin = 0.2
+                value_clip_margin = eps
                 V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
                 
                 # Calculate the critic loss using both the clipped and original value estimates
@@ -93,35 +108,55 @@ class Learner(object):
                 value_loss_clipped = (Gt - V_clipped) ** 2
                 agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
                 
-  
+                # TD = Gt - agent.critic_net(jobs)[0]
+                # if critic_hys:
+                #     TD = torch.max(TD*c_hys_value, TD)
+                # agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
                 agent.critic_optimizer.zero_grad()
-                agent.critic_loss.backward()
+                # agent.critic_loss.backward()
                 if self.grad_clip_value:
                     clip_grad_value_(agent.critic_net.parameters(), self.grad_clip_value)
                 if self.grad_clip_norm:
                     clip_grad_norm_(agent.critic_net.parameters(), self.grad_clip_norm)
-                agent.critic_optimizer.step()
-                
-                ############################## calculate actor loss using the updated critic ####################################
-                V_value = agent.critic_net(jobs)[0].detach()
+                # agent.critic_optimizer.step()
 
-                adv_value = Gt - V_value
+            ##############################  calculate actor loss using the updated critic ####################################
+            V_value = agent.critic_net(jobs)[0].detach()
+            adv_value = Gt - V_value
+            action_logits = agent.actor_net(obs, eps=eps)[0]
+            new_log_pi_a = action_logits.gather(-1, action)
+            
+            ratios = torch.exp(new_log_pi_a - old_log_pi_a)  # Calculating the ratio (pi_theta / pi_theta__old)
+            surr1 = ratios * adv_value
+            surr2 = torch.clamp(ratios, 1 - 0.1, 1 + 0.1) * adv_value
+            
+            pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
+                                                                                trace_len, 
+                                                                                1)
+            agent.actor_loss = -torch.mean(torch.min(surr1, surr2))
+            # if adv_hys:
+            #     adv_value = torch.max(adv_value*adv_hys_value, adv_value)
+
+            # action_logits = agent.actor_net(obs, eps=eps)[0]
+            # log_pi_a = action_logits.gather(-1, action)
+            # pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
+            #                                                                                   trace_len, 
+            #                                                                                   1)
+            # actor_loss = torch.sum(exp_valid * discount * (log_pi_a * adv_value + etrpy_w * pi_entropy), dim=1)
+            # agent.actor_loss = -1 * torch.sum(actor_loss) / exp_valid.sum()
+
+            agent.actor_optimizer.zero_grad()
+            # agent.actor_loss.backward()
+            if self.grad_clip_value:
+                clip_grad_value_(agent.actor_net.parameters(), self.grad_clip_value)
+            if self.grad_clip_norm:
+                clip_grad_norm_(agent.actor_net.parameters(), self.grad_clip_norm)
+            # agent.actor_optimizer.step()
+            total_loss = agent.actor_loss * agent.critic_loss * pi_entropy.mean()
+            total_loss.backward()
                 
-                action_logits = agent.actor_net(obs, eps=eps)[0].detach()
-                new_log_pi_a = action_logits.gather(-1, action)
-                
-                ratios = torch.exp(new_log_pi_a - old_log_pi_a)  # Calculating the ratio (pi_theta / pi_theta__old)
-                surr1 = ratios * adv_value
-                surr2 = torch.clamp(ratios, 1 - ippo_clip_value, 1 + ippo_clip_value) * adv_value
-                agent.actor_loss = -torch.mean(torch.min(surr1, surr2))
-                
-                agent.actor_optimizer.zero_grad()
-                agent.actor_loss.backward()
-                if self.grad_clip_value:
-                    clip_grad_value_(agent.actor_net.parameters(), self.grad_clip_value)
-                if self.grad_clip_norm:
-                    clip_grad_norm_(agent.actor_net.parameters(), self.grad_clip_norm)
-                agent.actor_optimizer.step()
+            agent.critic_optimizer.step()
+            agent.actor_optimizer.step()
 
 
     def update_critic_target_net(self, soft=False):

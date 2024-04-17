@@ -121,11 +121,10 @@ class MacIAISC(object):
         self.eval_returns = []
         
         wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
-        wandb.init(project='mac-iaicc')
+        wandb.init(project='mac-iaisc')
 
     def learn(self):
         epi_count = 0
-        sum_avg_r = 0
         if self.resume:
             epi_count, self.eval_returns = load_checkpoint(self.run_id, self.save_dir, self.controller, self.envs_runner)
 
@@ -137,8 +136,7 @@ class MacIAISC(object):
                 self.eval_returns.append(np.mean(self.envs_runner.eval_returns[-self.eval_num_epi:]))
                 self.envs_runner.eval_returns = []
                 print(f"{[self.run_id]} Finished: {epi_count}/{self.total_epi} Evaluate learned policies with averaged returns {self.eval_returns[-1]} ...", flush=True)
-                sum_avg_r += self.eval_returns[-1]
-                wandb.log({'Episode': epi_count, 'Returns': sum_avg_r})
+                wandb.log({'Episode': epi_count, 'Mean Returns': self.eval_returns[-1]})
                 # save the best policy
                 if self.eval_returns[-1] == np.max(self.eval_returns):
                     save_policies(self.run_id, self.controller.agents, self.save_dir)
