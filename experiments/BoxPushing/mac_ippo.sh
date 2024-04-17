@@ -28,13 +28,13 @@ do
                     --train_freq=48 \
                     --n_env=48 \
                     --n_step_TD=3 \
-                    --grad_clip_norm=0.5 \
+                    --grad_clip_norm=0 \
                     --eps_start=1.0 \
                     --eps_end=0.01 \
                     --eps_stable_at=4_000 \
                     --total_epi=40_000 \
                     --grid_dim 10 10 \
-                    --gamma=0.99 \
+                    --gamma=0.98 \
                     --eval_policy \
                     --sample_epi \
                     --run_id=$i &
