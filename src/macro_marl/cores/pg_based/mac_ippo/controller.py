@@ -10,7 +10,7 @@ class MAC(object):
     def __init__(self, env, obs_last_action=False, 
                  a_mlp_layer_size=64, a_rnn_layer_size=64, 
                  c_mlp_layer_size=64, c_rnn_layer_size=64,
-                 device='cpu'):
+                 device='cuda'):
 
         self.env = env
         self.n_agent = env.n_agent
@@ -23,7 +23,6 @@ class MAC(object):
 
         self.device = device
 
-
         self._build_agent()
         self._init_critic()
 
@@ -34,6 +33,7 @@ class MAC(object):
             for idx, agent in enumerate(self.agents):
                 if valids[idx]:
                     if not using_tgt_net:
+                        # print("Is obs on CUDA:", obses[idx].is_cuda)   
                         action_logits, new_h_state = agent.actor_net(obses[idx].view(1,1,-1), 
                                                                      h_states[idx], 
                                                                      eps=eps, 
