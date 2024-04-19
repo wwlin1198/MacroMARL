@@ -94,7 +94,7 @@ class MacIPPO(object):
         # create parallel envs runner
         self.envs_runner = EnvsRunner(self.env, n_env, self.controller, self.memory, env_terminate_step, gamma, seed, obs_last_action)
         # create learner
-        self.learner = Learner(self.env, self.controller, self.memory, gamma, **hyper_params)
+        self.learner = Learner(self.env, self.controller, self.memory, gamma, **hyper_params,device=device)
         # create epsilon calculator for implementing e-greedy exploration policy
         self.eps_call = Linear_Decay(eps_stable_at, eps_start, eps_end)
         # create entropy loss weight calculator
