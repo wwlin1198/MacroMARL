@@ -48,7 +48,7 @@ class Learner(object):
 
         self.n_step_TD = n_step_TD
         self.TD_lambda = TD_lambda
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
         self._set_optimizer()
 
@@ -99,7 +99,7 @@ class Learner(object):
             V_value = agent.critic_net(jobs)[0]
 
             # Clipped value function
-            value_clip_margin = eps
+            value_clip_margin = eps - 0.0001
             V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
             
             # Calculate the critic loss using both the clipped and original value estimates
@@ -128,7 +128,7 @@ class Learner(object):
             pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                 trace_len, 
                                                                                 1)
-            agent.actor_loss = -torch.mean(torch.min(surr1, surr2))
+            agent.actor_loss = -torch.mean(exp_valid * torch.min(surr1, surr2))
 
             agent.actor_optimizer.zero_grad()
             # agent.actor_loss.backward()
@@ -137,7 +137,6 @@ class Learner(object):
             if self.grad_clip_norm:
                 clip_grad_norm_(agent.actor_net.parameters(), self.grad_clip_norm)
             # agent.actor_optimizer.step()
-        
             total_loss = agent.actor_loss * pi_entropy.mean()
             total_loss.backward()
                 

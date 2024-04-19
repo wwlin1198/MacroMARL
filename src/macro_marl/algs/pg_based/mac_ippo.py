@@ -1,6 +1,5 @@
 import time
 import numpy as np
-import torch
 
 from macro_marl.cores.pg_based.mac_ippo.memory import Memory_epi, Memory_rand
 from macro_marl.cores.pg_based.mac_ippo.controller import MAC
@@ -65,7 +64,6 @@ class MacIPPO(object):
         self.run_id = run_id
         self.save_dir = save_dir
         self.resume = resume
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # collect params
         actor_params = {'a_mlp_layer_size': a_mlp_layer_size,
@@ -83,7 +81,7 @@ class MacIPPO(object):
                         'grad_clip_norm': grad_clip_norm,
                         'n_step_TD': n_step_TD,
                         'TD_lambda': TD_lambda,
-                        'device': self.device}
+                        'device': device}
 
         self.env = env
         # create buffer
@@ -92,7 +90,7 @@ class MacIPPO(object):
         else:
             self.memory = Memory_rand(trace_len, env.obs_size, env.n_action, obs_last_action, size=train_freq)
         # cretate controller
-        self.controller = MAC(self.env, obs_last_action, **actor_params, **critic_params, device=self.device) 
+        self.controller = MAC(self.env, obs_last_action, **actor_params, **critic_params, device=device) 
         # create parallel envs runner
         self.envs_runner = EnvsRunner(self.env, n_env, self.controller, self.memory, env_terminate_step, gamma, seed, obs_last_action)
         # create learner
