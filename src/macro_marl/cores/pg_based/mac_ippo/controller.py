@@ -21,7 +21,7 @@ class MAC(object):
         self.c_mlp_layer_size = c_mlp_layer_size
         self.c_rnn_layer_size = c_rnn_layer_size
 
-        self.device = device
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
         self._build_agent()

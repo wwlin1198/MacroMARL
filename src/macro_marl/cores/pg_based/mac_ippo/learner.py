@@ -48,7 +48,7 @@ class Learner(object):
 
         self.n_step_TD = n_step_TD
         self.TD_lambda = TD_lambda
-        self.device = device
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         self._set_optimizer()
 
