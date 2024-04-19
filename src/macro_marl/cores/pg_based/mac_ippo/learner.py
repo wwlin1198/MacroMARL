@@ -99,7 +99,7 @@ class Learner(object):
             V_value = agent.critic_net(jobs)[0]
 
             # Clipped value function
-            value_clip_margin = eps
+            value_clip_margin = eps - 0.0001
             V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
             
             # Calculate the critic loss using both the clipped and original value estimates
@@ -128,7 +128,7 @@ class Learner(object):
             pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                 trace_len, 
                                                                                 1)
-            agent.actor_loss = -torch.mean(torch.min(surr1, surr2))
+            agent.actor_loss = -torch.mean(exp_valid * torch.min(surr1, surr2))
 
             agent.actor_optimizer.zero_grad()
             # agent.actor_loss.backward()
