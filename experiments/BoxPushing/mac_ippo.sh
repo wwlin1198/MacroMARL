@@ -39,7 +39,7 @@ do
                     --eval_policy \
                     --sample_epi \
                     --run_id=$i \
-                    --device='cuda'&
+                    --device='cuda:0'&
 done
 
 wait
