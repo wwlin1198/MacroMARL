@@ -101,8 +101,8 @@ class MacIPPO(object):
         # record evaluation return
         self.eval_returns = []
 
-        wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
-        wandb.init(project='MAC_IPPO')
+        # wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
+        # wandb.init(project='MAC_IPPO')
 
 
     def learn(self):
@@ -119,7 +119,7 @@ class MacIPPO(object):
                 self.envs_runner.eval_returns = []
                 print(f"{[self.run_id]} Finished: {epi_count}/{self.total_epi} Evaluate learned policies with averaged returns {self.eval_returns[-1]} ...", flush=True)
                 
-                wandb.log({'mean_return':self.eval_returns[-1],'episodes': epi_count})
+                # wandb.log({'mean_return':self.eval_returns[-1],'episodes': epi_count})
 
                 # save the best policy
                 if self.eval_returns[-1] == np.max(self.eval_returns):
