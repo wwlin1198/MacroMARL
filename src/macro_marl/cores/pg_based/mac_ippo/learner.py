@@ -27,7 +27,7 @@ class Learner(object):
                  grad_clip_norm=None,
                  n_step_TD=0, 
                  TD_lambda=0.0,
-                 device='gpu'):
+                 device='cpu'):
 
         self.env = env
         self.n_agent = env.n_agent

@@ -38,7 +38,8 @@ do
                     --gamma=0.99 \
                     --eval_policy \
                     --sample_epi \
-                    --run_id=$i &
+                    --run_id=$i \
+                    --device='cuda'&
 done
 
 wait

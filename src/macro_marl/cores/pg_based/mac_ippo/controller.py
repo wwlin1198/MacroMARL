@@ -10,7 +10,7 @@ class MAC(object):
     def __init__(self, env, obs_last_action=False, 
                  a_mlp_layer_size=64, a_rnn_layer_size=64, 
                  c_mlp_layer_size=64, c_rnn_layer_size=64,
-                 device='gpu'):
+                 device='cpu'):
 
         self.env = env
         self.n_agent = env.n_agent
@@ -22,6 +22,7 @@ class MAC(object):
         self.c_rnn_layer_size = c_rnn_layer_size
 
         self.device = device
+
 
         self._build_agent()
         self._init_critic()
