@@ -21,8 +21,8 @@ do
                     --n_agent=2 \
                     --env_terminate_step=100 \
                     --big_box_reward=300 \
-                    --ippo_clip_value=0.2 \
-                    --ippo_epochs=4 \
+                    --ippo_clip_value=0.1 \
+                    --ippo_epochs=1 \
                     --a_lr=0.0004 \
                     --c_lr=0.004 \
                     --train_freq=48 \
@@ -34,8 +34,8 @@ do
                     --eps_end=0.01 \
                     --eps_stable_at=4_000 \
                     --total_epi=40_000 \
-                    --grid_dim 6 6 \
-                    --gamma=0.99 \
+                    --grid_dim 10 10 \
+                    --gamma=0.98 \
                     --eval_policy \
                     --sample_epi \
                     --run_id=$i &

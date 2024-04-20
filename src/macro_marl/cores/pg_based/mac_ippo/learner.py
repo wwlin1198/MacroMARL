@@ -75,27 +75,16 @@ class Learner(object):
             action_logits = agent.actor_net(obs, eps=eps)[0]
             # print(action_logits.size())
             old_log_pi_a = action_logits.gather(-1, action)
+
             ##############################  calculate critic loss and optimize the critic_net ####################################
-            if not self.TD_lambda:
-                # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
-                Gt = self._get_bootstrap_return(reward, 
-                                                torch.cat([jobs[:,0].unsqueeze(1),
-                                                            n_jobs],
-                                                            dim=1),
-                                                terminate, 
-                                                epi_len, 
-                                                agent.critic_tgt_net)
-            else:
-                Gt = self._get_td_lambda_return(obs.shape[0], 
-                                                trace_len, 
-                                                epi_len, 
-                                                reward, 
-                                                torch.cat([jobs[:,0].unsqueeze(1),
-                                                            n_jobs],
-                                                            dim=1),
-                                                terminate, 
-                                                agent.critic_tgt_net)
-                
+            # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
+            Gt = self._get_bootstrap_return(reward, 
+                                            torch.cat([jobs[:,0].unsqueeze(1),
+                                                        n_jobs],
+                                                        dim=1),
+                                            terminate, 
+                                            epi_len, 
+                                            agent.critic_tgt_net)  
             V_value = agent.critic_net(jobs)[0]
 
             # Clipped value function
@@ -116,7 +105,7 @@ class Learner(object):
             # agent.critic_optimizer.step()
 
             ##############################  calculate actor loss using the updated critic ####################################
-            V_value = agent.critic_net(jobs)[0].detach()
+            V_value = agent.critic_net(jobs)[0].detach() #prevent gradientes from going into critic from actor updates
             adv_value = Gt - V_value
             action_logits = agent.actor_net(obs, eps=eps)[0]
             new_log_pi_a = action_logits.gather(-1, action)
