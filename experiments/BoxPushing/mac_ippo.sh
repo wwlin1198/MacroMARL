@@ -13,7 +13,7 @@ trap cleanup SIGINT
 
 
 # Box Pushing 8x8
-for ((i=0; i<1; i++))
+for ((i=0; i<20; i++))
 do
     pg_based_main.py --save_dir='ma_ippo_bp6' \
                     --alg='MacIPPO' \
