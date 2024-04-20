@@ -71,7 +71,6 @@ class Learner(object):
                 
                 if obs.shape[1] == 0:
                     continue
-                
             action_logits = agent.actor_net(obs, eps=eps)[0]
             # print(action_logits.size())
             old_log_pi_a = action_logits.gather(-1, action)

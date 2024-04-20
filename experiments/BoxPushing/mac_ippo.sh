@@ -38,7 +38,7 @@ do
                     --gamma=0.98 \
                     --eval_policy \
                     --sample_epi \
-                    --run_id=$i &
+                    --run_id=$i&
 done
 
 wait
