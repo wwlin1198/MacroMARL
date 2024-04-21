@@ -69,6 +69,9 @@ class Learner(object):
 
             ##############################  calculate critic loss and optimize the critic_net ####################################
             for _ in range(self.c_train_iteration):
+                action_logits = agent.actor_net(obs, eps=eps)[0]
+                old_log_pi_a = action_logits.gather(-1, action)
+
                 if not self.TD_lambda:
                     # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
                     Gt = self._get_bootstrap_return(reward,
@@ -85,7 +88,6 @@ class Learner(object):
                                                     n_state,
                                                     terminate, 
                                                     agent.critic_tgt_net)
-
                 TD = Gt - agent.critic_net(state)
                 if critic_hys:
                     TD = torch.max(TD*c_hys_value, TD)
@@ -113,17 +115,22 @@ class Learner(object):
             ##############################  calculate actor loss using the updated critic ####################################
             V_value = agent.critic_net(state).detach()
 
-            adv_value = Gt - V_value
+            returns, adv_value = self._get_gae_returns(reward, V_value, terminate, gamma=0.99, lambda_gae=0.95)
             if adv_hys:
                 adv_value = torch.max(adv_value*adv_hys_value, adv_value)
 
             action_logits = agent.actor_net(obs, eps=eps)[0]
-            log_pi_a = action_logits.gather(-1, action)
+            new_log_pi_a = action_logits.gather(-1, action)
             pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                               trace_len, 
                                                                                               1)
-            actor_loss = torch.sum(exp_valid * discount * (log_pi_a * adv_value + etrpy_w * pi_entropy), dim=1)
-            agent.actor_loss = -1 * torch.sum(actor_loss) / exp_valid.sum()
+
+            # actor_loss = torch.sum(exp_valid * discount * (log_pi_a * adv_value + etrpy_w * pi_entropy), dim=1)
+            # agent.actor_loss = -1 * torch.sum(actor_loss) / exp_valid.sum()
+            ratios = torch.exp(new_log_pi_a - old_log_pi_a)  # Calculating the ratio (pi_theta / pi_theta__old)
+            surr1 = ratios * adv_value
+            surr2 = torch.clamp(ratios, 1 - 0.2, 1 + 0.2) * adv_value
+            agent.actor_loss = -torch.mean(exp_valid * torch.min(surr1, surr2)) * pi_entropy.mean()
 
             agent.actor_optimizer.zero_grad()
             agent.actor_loss.backward()
@@ -307,26 +314,98 @@ class Learner(object):
         Gt = torch.sum(discounts * rewards) 
         return Gt
 
-    def _get_td_lambda_return(self, batch_size, trace_len, epi_len, reward, n_state, terminate, critic_net):
-        # calculate MC returns
-        Gt = self._get_discounted_return(reward, n_state, terminate, epi_len, critic_net)
-        # calculate n-step bootstrap returns
-        self.n_step_TD = 0
-        n_step_part = self._get_bootstrap_return(reward, n_state, terminate, epi_len, critic_net)
+    # def _get_td_lambda_return(self, batch_size, trace_len, epi_len, reward, n_state, terminate, critic_net):
+    #     # calculate MC returns
+    #     Gt = self._get_discounted_return(reward, n_state, terminate, epi_len, critic_net)
+    #     # calculate n-step bootstrap returns
+    #     self.n_step_TD = 0
+    #     n_step_part = self._get_bootstrap_return(reward, n_state, terminate, epi_len, critic_net)
+    #     for n in range(2, trace_len):
+    #         self.n_step_TD=n
+    #         next_n_step_part = self._get_bootstrap_return(reward, n_state, terminate, epi_len, critic_net)
+    #         n_step_part = torch.cat([n_step_part, next_n_step_part], dim=-1)
+    #     # calculate the lmda for n-step bootstrap part
+    #     lmdas = torch.pow(torch.ones(1,1)*self.TD_lambda, torch.arange(trace_len-1)).repeat(trace_len, 1).unsqueeze(0).repeat(batch_size,1,1)
+    #     mask = (torch.arange(trace_len).view(-1,1) + torch.arange(trace_len-1).view(1,-1)).squeeze(0).repeat(batch_size,1,1)
+    #     mask = mask >= epi_len.view(batch_size, -1, 1)-1
+    #     lmdas[mask] = 0.0
+    #     # calculate the lmda for MC part
+    #     MC_lmdas = torch.zeros_like(Gt)
+    #     for epi_id, length in enumerate(epi_len):
+    #         last_step_lmda = torch.pow(torch.ones(1,1)*self.TD_lambda, torch.arange(length-1,-1,-1)).view(-1,1)
+    #         MC_lmdas[epi_id][0:length] += last_step_lmda
+    #     # TD LAMBDA RETURN
+    #     Gt = (1 - self.TD_lambda) * torch.sum(lmdas * n_step_part, dim=-1, keepdim=True) +  MC_lmdas * Gt
+    #     return Gt
+    def _get_td_lambda_return(self, batch_size, trace_len, epi_len, reward, n_state, terminate, critic_net, gamma, lambda_gae):
+        """
+        Compute TD(λ) returns incorporating GAE within the PPO context.
+        Args:
+        - batch_size, trace_len, epi_len, reward, n_state, terminate: Standard inputs for RL.
+        - critic_net: Neural network to estimate state values.
+        - gamma (float): Discount factor.
+        - lambda_gae (float): GAE lambda parameter.
+        
+        Returns:
+        - torch.Tensor: Computed returns with GAE and TD(λ) blending.
+        """
+        # Obtain value estimates for states
+        values = critic_net(n_state).detach()
+
+        # Calculate GAE returns
+        returns, advantages = self._get_gae_returns(reward, values, terminate, gamma, lambda_gae)
+
+        # Integrate returns with n-step returns calculation
+        n_step_part = returns  # Directly use GAE-computed returns here
         for n in range(2, trace_len):
-            self.n_step_TD=n
-            next_n_step_part = self._get_bootstrap_return(reward, n_state, terminate, epi_len, critic_net)
-            n_step_part = torch.cat([n_step_part, next_n_step_part], dim=-1)
-        # calculate the lmda for n-step bootstrap part
-        lmdas = torch.pow(torch.ones(1,1)*self.TD_lambda, torch.arange(trace_len-1)).repeat(trace_len, 1).unsqueeze(0).repeat(batch_size,1,1)
+            self.n_step_TD = n
+            # Additional n-step logic could be applied here if needed
+
+        # Calculate the lmda for n-step bootstrap part
+        lmdas = torch.pow(torch.ones(1,1) * self.TD_lambda, torch.arange(trace_len-1)).repeat(trace_len, 1).unsqueeze(0).repeat(batch_size,1,1)
         mask = (torch.arange(trace_len).view(-1,1) + torch.arange(trace_len-1).view(1,-1)).squeeze(0).repeat(batch_size,1,1)
         mask = mask >= epi_len.view(batch_size, -1, 1)-1
         lmdas[mask] = 0.0
-        # calculate the lmda for MC part
-        MC_lmdas = torch.zeros_like(Gt)
+
+        # Calculate the lmda for MC part
+        MC_lmdas = torch.zeros_like(returns)
         for epi_id, length in enumerate(epi_len):
-            last_step_lmda = torch.pow(torch.ones(1,1)*self.TD_lambda, torch.arange(length-1,-1,-1)).view(-1,1)
+            last_step_lmda = torch.pow(torch.ones(1,1) * self.TD_lambda, torch.arange(length-1,-1,-1)).view(-1,1)
             MC_lmdas[epi_id][0:length] += last_step_lmda
+
         # TD LAMBDA RETURN
-        Gt = (1 - self.TD_lambda) * torch.sum(lmdas * n_step_part, dim=-1, keepdim=True) +  MC_lmdas * Gt
+        Gt = (1 - self.TD_lambda) * torch.sum(lmdas * n_step_part, dim=-1, keepdim=True) + MC_lmdas * returns
         return Gt
+    def _get_gae_returns(self, rewards, values, dones, gamma, lambda_gae):
+        """
+        Calculate GAE for returns which can be used in a PPO context.
+        Args:
+        - rewards (torch.Tensor): Tensor of rewards for each timestep in each episode.
+        - values (torch.Tensor): Tensor of value function estimates at each timestep.
+        - dones (torch.Tensor): Tensor indicating whether each timestep is terminal.
+        - gamma (float): Discount factor.
+        - lambda_gae (float): GAE lambda parameter.
+        
+        Returns:
+        - returns (torch.Tensor): Returns for each timestep.
+        - advantages (torch.Tensor): Advantages for each timestep.
+        """
+        num_steps = rewards.size(0)
+        advantages = torch.zeros_like(rewards)
+        returns = torch.zeros_like(rewards)
+        last_gae_lam = 0
+
+        for t in reversed(range(num_steps)):
+            if t == num_steps - 1:
+                next_non_terminal = 1.0 - dones[t]
+                next_values = 0
+            else:
+                next_non_terminal = 1.0 - dones[t + 1]
+                next_values = values[t + 1]
+
+            delta = rewards[t] + gamma * next_values * next_non_terminal - values[t]
+            last_gae_lam = delta + gamma * lambda_gae * next_non_terminal * last_gae_lam
+            advantages[t] = last_gae_lam
+
+        returns = advantages + values
+        return returns, advantages

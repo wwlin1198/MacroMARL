@@ -11,7 +11,7 @@ cleanup() {
 trap cleanup SIGINT
 
 # Box Pushing 8x8
-for ((i=0; i<5; i++))
+for ((i=0; i<1; i++))
 do
     pg_based_main.py --save_dir='ma_iaicc_bp8' \
                         --alg='MacIAISC' \
