@@ -69,9 +69,6 @@ class Learner(object):
 
             ##############################  calculate critic loss and optimize the critic_net ####################################
             for _ in range(self.c_train_iteration):
-                action_logits = agent.actor_net(obs, eps=eps)[0]
-                old_log_pi_a = action_logits.gather(-1, action)
-
                 if not self.TD_lambda:
                     # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
                     Gt = self._get_bootstrap_return(reward,
@@ -91,18 +88,8 @@ class Learner(object):
                 TD = Gt - agent.critic_net(state)
                 if critic_hys:
                     TD = torch.max(TD*c_hys_value, TD)
-                    
-                # v_val clipping instead 
-                V_value = agent.critic_net(state)
-                value_clip_margin = eps - 0.0001
-                V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
-                value_loss_unclipped = (Gt - V_value) ** 2
-                value_loss_clipped = (Gt - V_clipped) ** 2
 
-                agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
-
-
-                # agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
+                agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
 
                 agent.critic_optimizer.zero_grad()
                 agent.critic_loss.backward()
@@ -115,22 +102,18 @@ class Learner(object):
             ##############################  calculate actor loss using the updated critic ####################################
             V_value = agent.critic_net(state).detach()
 
-            returns, adv_value = self._get_gae_returns(reward, V_value, terminate, gamma=0.99, lambda_gae=0.95)
+            adv_value = Gt - V_value
             if adv_hys:
                 adv_value = torch.max(adv_value*adv_hys_value, adv_value)
 
             action_logits = agent.actor_net(obs, eps=eps)[0]
-            new_log_pi_a = action_logits.gather(-1, action)
+            log_pi_a = action_logits.gather(-1, action)
             pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                               trace_len, 
                                                                                               1)
 
-            # actor_loss = torch.sum(exp_valid * discount * (log_pi_a * adv_value + etrpy_w * pi_entropy), dim=1)
-            # agent.actor_loss = -1 * torch.sum(actor_loss) / exp_valid.sum()
-            ratios = torch.exp(new_log_pi_a - old_log_pi_a)  # Calculating the ratio (pi_theta / pi_theta__old)
-            surr1 = ratios * adv_value
-            surr2 = torch.clamp(ratios, 1 - 0.2, 1 + 0.2) * adv_value
-            agent.actor_loss = -torch.mean(exp_valid * torch.min(surr1, surr2)) * pi_entropy.mean()
+            actor_loss = torch.sum(exp_valid * discount * (log_pi_a * adv_value + etrpy_w * pi_entropy), dim=1)
+            agent.actor_loss = -1 * torch.sum(actor_loss) / exp_valid.sum()
 
             agent.actor_optimizer.zero_grad()
             agent.actor_loss.backward()
