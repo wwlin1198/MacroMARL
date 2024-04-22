@@ -8,7 +8,6 @@ class Memory:
     """Base class of a memory buffer"""
 
     def __init__(self, 
-                 state_dim,
                  obs_dims, 
                  action_dims, 
                  obs_last_action=False, 
@@ -18,7 +17,6 @@ class Memory:
 
         self.n_agent = len(obs_dims)
 
-        self.ZERO_STATE = torch.zeros(state_dim).view(1,-1)
         if not obs_last_action:
             self.ZERO_OBS = [torch.zeros(dim).view(1,-1) for dim in obs_dims]
         else:
@@ -32,14 +30,12 @@ class Memory:
         self.ZERO_JOINT_VALID = torch.tensor(0, dtype=torch.bool).view(1,-1)
         self.ZERO_EXPV = [torch.tensor(0.0).view(1,-1)]*self.n_agent
 
-        self.ZERO_PADDING = [(self.ZERO_STATE,
-                              self.ZERO_OBS,
+        self.ZERO_PADDING = [(self.ZERO_OBS,
                               self.ZERO_VALID,
                               self.ZERO_AVAIL_ACT,
                               self.ZERO_ACT,
                               self.ZERO_REWARD,
                               self.ZERO_JOINT_REWARD, 
-                              self.ZERO_STATE,
                               self.ZERO_OBS,
                               self.ZERO_AVAIL_ACT,
                               self.ZERO_TERMINATE,
