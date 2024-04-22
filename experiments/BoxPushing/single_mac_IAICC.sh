@@ -30,8 +30,8 @@ do
                         --eps_end=0.01 \
                         --eps_stable_at=4_000 \
                         --total_epi=40_000 \
-                        --grid_dim 8 8 \
-                        --gamma=0.98 \
+                        --grid_dim 10 10 \
+                        --gamma=0.99 \
                         --eval_policy \
                         --sample_epi \
                         --run_id=$i &

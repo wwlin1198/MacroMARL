@@ -270,3 +270,37 @@ class Learner(object):
         # TD LAMBDA RETURN
         Gt = (1 - self.TD_lambda) * torch.sum(lmdas * n_step_part, dim=-1, keepdim=True) +  MC_lmdas * Gt
         return Gt
+    
+    def _get_gae_returns(self, rewards, values, dones, gamma, lambda_gae):
+        """
+        Calculate GAE for returns which can be used in a PPO context.
+        Args:
+        - rewards (torch.Tensor): Tensor of rewards for each timestep in each episode.
+        - values (torch.Tensor): Tensor of value function estimates at each timestep.
+        - dones (torch.Tensor): Tensor indicating whether each timestep is terminal.
+        - gamma (float): Discount factor.
+        - lambda_gae (float): GAE lambda parameter.
+        
+        Returns:
+        - returns (torch.Tensor): Returns for each timestep.
+        - advantages (torch.Tensor): Advantages for each timestep.
+        """
+        num_steps = rewards.size(0)
+        advantages = torch.zeros_like(rewards)
+        returns = torch.zeros_like(rewards)
+        last_gae_lam = 0
+
+        for t in reversed(range(num_steps)):
+            if t == num_steps - 1:
+                next_non_terminal = 1.0 - dones[t]
+                next_values = 0
+            else:
+                next_non_terminal = 1.0 - dones[t + 1]
+                next_values = values[t + 1]
+
+            delta = rewards[t] + gamma * next_values * next_non_terminal - values[t]
+            last_gae_lam = delta + gamma * lambda_gae * next_non_terminal * last_gae_lam
+            advantages[t] = last_gae_lam
+
+        returns = advantages + values
+        return returns, advantages

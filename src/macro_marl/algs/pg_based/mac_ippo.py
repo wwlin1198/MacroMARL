@@ -120,7 +120,7 @@ class MacIPPO(object):
                 self.envs_runner.eval_returns = []
                 print(f"{[self.run_id]} Finished: {epi_count}/{self.total_epi} Evaluate learned policies with averaged returns {self.eval_returns[-1]} ...", flush=True)
                 
-                # wandb.log({'mean_return':self.eval_returns[-1],'episodes': epi_count})
+                wandb.log({'mean_return':self.eval_returns[-1],'episodes': epi_count})
 
                 # save the best policy
                 if self.eval_returns[-1] == np.max(self.eval_returns):
@@ -139,6 +139,9 @@ class MacIPPO(object):
                 self.memory.buf.clear()
 
             epi_count += self.train_freq
+
+            # self.learner.update_critic_target_net()
+            # self.learner.update_actor_target_net()
 
             # update target net
             if self.c_target_soft_update:

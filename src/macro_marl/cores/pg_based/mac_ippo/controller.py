@@ -8,8 +8,8 @@ from .utils import Agent
 class MAC(object):
     
     def __init__(self, env, obs_last_action=False, 
-                 a_mlp_layer_size=64, a_rnn_layer_size=64, 
-                 c_mlp_layer_size=64, c_rnn_layer_size=64,
+                 a_mlp_layer_size=128, a_rnn_layer_size=128, 
+                 c_mlp_layer_size=128, c_rnn_layer_size=128,
                  device='cuda'):
 
         self.env = env

@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 from torch.optim import Adam
+import torch.nn.functional as F
 from torch.nn.utils import clip_grad_value_, clip_grad_norm_
 from torch.nn.utils.rnn import pad_sequence
 
@@ -62,37 +63,65 @@ class Learner(object):
         
         dec_batches = self._sep_joint_exps(batch)
         dec_batches, trace_lens, epi_lens = self._squeeze_dec_exp(dec_batches, batch_size, trace_len)
+        
+        for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
+            obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
+            if obs.shape[1] == 0:
+                continue
 
+        action_logits = agent.actor_net(obs, eps=eps)[0].detach()
+        # print(action_logits.size())
+        old_log_pi_a = action_logits.gather(-1, action)
+        # Gt = self._get_bootstrap_return(reward, 
+        #                         torch.cat([jobs[:,0].unsqueeze(1),
+        #                                     n_jobs],
+        #                                     dim=1),
+        #                         terminate, 
+        #                         epi_len, 
+        #                         agent.critic_tgt_net)
+        Gt = self._get_discounted_return(reward, torch.cat([jobs[:, 0].unsqueeze(1), n_jobs], dim=1), terminate, epi_len, agent.critic_tgt_net)
+        V_value = agent.critic_net(jobs)[0].detach()  # prevent gradients from going into critic from actor updates
+        delta = Gt - V_value
+        adv_values = torch.zeros_like(delta)  # Initialize advantage values tensor
+
+        # Compute advantages using GAE formula
+        for t in reversed(range(len(delta))):
+            if t == len(delta) - 1:
+                adv_values[t] = delta[t]
+            else:
+                adv_values[t] = delta[t] + 0.99 * 0.95 * adv_values[t + 1]
+        adv_value = (adv_values - adv_values.mean()) / (adv_values.std() + 1e-10)
         # PPO updates
         for _ in range(ippo_epochs):
-            for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
+            # for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
                 
-                obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
+            #     obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
                 
-                if obs.shape[1] == 0:
-                    continue
-            action_logits = agent.actor_net(obs, eps=eps)[0]
-            # print(action_logits.size())
-            old_log_pi_a = action_logits.gather(-1, action)
+            #     if obs.shape[1] == 0:
+            #         continue
+
 
             ##############################  calculate critic loss and optimize the critic_net ####################################
             # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
-            Gt = self._get_bootstrap_return(reward, 
-                                            torch.cat([jobs[:,0].unsqueeze(1),
-                                                        n_jobs],
-                                                        dim=1),
-                                            terminate, 
-                                            epi_len, 
-                                            agent.critic_tgt_net)  
-            V_value = agent.critic_net(jobs)[0]
+            Gt = self._get_discounted_return(reward,torch.cat([jobs[:,0].unsqueeze(1),
+                                            n_jobs],
+                                            dim=1), terminate, epi_len, agent.critic_tgt_net) 
 
+            # Gt = self._get_bootstrap_return(reward, 
+            #                     torch.cat([jobs[:,0].unsqueeze(1),
+            #                                 n_jobs],
+            #                                 dim=1),
+            #                     terminate, 
+            #                     epi_len, 
+            #                     agent.critic_tgt_net)
+            V_value = agent.critic_net(jobs)[0]
             # Clipped value function
-            value_clip_margin = eps - 0.0001
+            value_clip_margin = 0.2
             V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
             
             # Calculate the critic loss using both the clipped and original value estimates
-            value_loss_unclipped = (Gt - V_value) ** 2
-            value_loss_clipped = (Gt - V_clipped) ** 2
+            value_loss_unclipped = F.mse_loss(Gt, V_value)
+            value_loss_clipped = F.mse_loss(Gt, V_clipped)
             agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
             
             agent.critic_optimizer.zero_grad()
@@ -104,8 +133,7 @@ class Learner(object):
             # agent.critic_optimizer.step()
 
             ##############################  calculate actor loss using the updated critic ####################################
-            V_value = agent.critic_net(jobs)[0].detach() #prevent gradientes from going into critic from actor updates
-            adv_value = Gt - V_value
+
             action_logits = agent.actor_net(obs, eps=eps)[0]
             new_log_pi_a = action_logits.gather(-1, action)
             
@@ -267,6 +295,8 @@ class Learner(object):
                 epi_r[end_step_idx] += self.gamma * critic_net(n_state[epi_idx].unsqueeze(0))[0].detach()[:,1:,:][0][end_step_idx]
             for idx in range(end_step_idx-1, -1, -1):
                 epi_r[idx] = epi_r[idx] + self.gamma * epi_r[idx+1]
+            
+            
         return Gt
 
     def _get_bootstrap_return(self, reward, n_state, terminate, epi_len, critic_net):
