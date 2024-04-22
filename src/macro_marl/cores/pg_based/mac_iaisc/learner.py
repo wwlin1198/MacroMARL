@@ -69,9 +69,6 @@ class Learner(object):
 
             ##############################  calculate critic loss and optimize the critic_net ####################################
             for _ in range(self.c_train_iteration):
-                action_logits = agent.actor_net(obs, eps=eps)[0]
-                old_log_pi_a = action_logits.gather(-1, action)
-
                 if not self.TD_lambda:
                     # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
                     Gt = self._get_bootstrap_return(reward,
@@ -91,18 +88,8 @@ class Learner(object):
                 TD = Gt - agent.critic_net(state)
                 if critic_hys:
                     TD = torch.max(TD*c_hys_value, TD)
-                    
-                # v_val clipping instead 
-                V_value = agent.critic_net(state)
-                value_clip_margin = eps - 0.0001
-                V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
-                value_loss_unclipped = (Gt - V_value) ** 2
-                value_loss_clipped = (Gt - V_clipped) ** 2
 
-                agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
-
-
-                # agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
+                agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
 
                 agent.critic_optimizer.zero_grad()
                 agent.critic_loss.backward()
