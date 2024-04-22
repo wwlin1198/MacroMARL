@@ -149,4 +149,4 @@ log/
 test_car/
 policy_nns/
 
-wandb/
+wandb*

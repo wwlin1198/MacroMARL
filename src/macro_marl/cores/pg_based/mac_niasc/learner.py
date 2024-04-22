@@ -93,6 +93,7 @@ class Learner(object):
             if critic_hys:
                 TD = torch.max(TD*c_hys_value, TD)
             joint_critic_loss = torch.sum(exp_valid * TD * TD) / exp_valid.sum()
+            
             self.joint_critic_optimizer.zero_grad()
             joint_critic_loss.backward()
             if self.grad_clip_value:
