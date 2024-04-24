@@ -8,6 +8,8 @@ from torch.nn.utils.rnn import pad_sequence
 
 from itertools import chain
 
+# modified with value clipping
+
 class Learner(object):
     
     def __init__(self, 
@@ -85,11 +87,19 @@ class Learner(object):
                                                     n_state,
                                                     terminate, 
                                                     agent.critic_tgt_net)
-                TD = Gt - agent.critic_net(state)
-                if critic_hys:
-                    TD = torch.max(TD*c_hys_value, TD)
+                # TD = Gt - agent.critic_net(state)
+                # if critic_hys:
+                #     TD = torch.max(TD*c_hys_value, TD)
 
-                agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
+                # agent.critic_loss = torch.sum(exp_valid * TD * TD) / torch.sum(exp_valid)
+                # v_val clipping instead 
+                V_value = agent.critic_net(state)
+                value_clip_margin = eps - 0.0001
+                V_clipped = V_value + (Gt - V_value).clamp(-value_clip_margin, value_clip_margin)
+                value_loss_unclipped = (Gt - V_value) ** 2
+                value_loss_clipped = (Gt - V_clipped) ** 2
+
+                agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
 
                 agent.critic_optimizer.zero_grad()
                 agent.critic_loss.backward()
