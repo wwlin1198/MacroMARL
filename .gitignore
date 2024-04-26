@@ -135,6 +135,8 @@ MA_hddrqn_oa/policy_nns/
 plot_test/
 plot/
 performance/
+wandb/
+wandb/latest-run
 localTest/
 fig/
 figure/
@@ -149,4 +151,4 @@ log/
 test_car/
 policy_nns/
 
-wandb/
+
