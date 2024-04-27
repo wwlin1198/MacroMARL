@@ -10,7 +10,7 @@ setup(
     package_dir={},
 
     install_requires=[
-        'cloudpickle==3.0.0',
+        'cloudpickle==1.3.0',
         'decorator==5.1.1',
         'dill==0.3.8',
         'future==1.0.0',
@@ -21,7 +21,7 @@ setup(
         'pandas==2.0.3',
         'Pillow>=8.1.1',
         'pygame==2.5.2',
-        'pyglet==2.0.15',
+        'pyglet==1.5.0',
         'pyparsing==3.0.4',
         'python-dateutil==2.9.0',
         'pytz==2024.1',
