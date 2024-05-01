@@ -45,7 +45,7 @@ dependencies:
     - ptyprocess==0.7.0
     - pyasn1==0.6.0
     - pyasn1-modules==0.4.0
-    - pygame==2.5.2
+    - pygame==2.5.2 
     - pyglet==2.0.15
     - pygments==2.10.0
     - pyparsing==3.0.4
