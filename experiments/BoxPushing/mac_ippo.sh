@@ -13,7 +13,7 @@ trap cleanup SIGINT
 
 
 # Box Pushing 8x8
-for ((i=0; i<1; i++))
+for ((i=0; i<10; i++))
 do
     pg_based_main.py --save_dir='ma_ippo_bp6' \
                     --alg='MacIPPO' \
@@ -22,17 +22,10 @@ do
                     --env_terminate_step=100 \
                     --big_box_reward=300 \
                     --ippo_clip_value=0.2 \
-<<<<<<< HEAD
                     --ippo_epochs=2 \
                     --a_lr=0.0004 \
                     --c_lr=0.0004 \
                     --train_freq=32 \
-=======
-                    --ippo_epochs=4 \
-                    --a_lr=0.0004 \
-                    --c_lr=0.0004 \
-                    --train_freq=48 \
->>>>>>> main
                     --n_env=48 \
                     --c_target_update_freq=64 \
                     --n_step_TD=3 \
