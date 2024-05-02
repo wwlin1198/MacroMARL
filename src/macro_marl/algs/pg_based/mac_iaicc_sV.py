@@ -121,7 +121,7 @@ class MacIAISC(object):
         self.eval_returns = []
         
         wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
-        wandb.init(project='mac-iaisc-ippo')
+        wandb.init(project='mac-iaisc-value-warehouse')
 
     def learn(self):
         epi_count = 0

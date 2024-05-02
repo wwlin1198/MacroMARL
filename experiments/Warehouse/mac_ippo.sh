@@ -11,17 +11,17 @@ cleanup() {
 trap cleanup SIGINT
 
 # Warehouse-A
-for ((i=0; i<5; i++))
+for ((i=0; i<3; i++))
 do
     pg_based_main.py --save_dir='ma_iaicc_warehouse_A' \
-                    --alg='MacIAICC' \
+                    --alg='MacIPPO' \
                     --run_id=$i \
                     --env_id='OSD-D-v7' \
                     --n_agent=3 \
                     --l_mode=0 \
                     --env_terminate_step=200 \
-                    --a_lr=0.0005 \
-                    --c_lr=0.0005 \
+                    --a_lr=0.0004 \
+                    --c_lr=0.0004 \
                     --train_freq=4 \
                     --n_env=4 \
                     --c_target_update_freq=32 \
@@ -31,7 +31,7 @@ do
                     --eps_end=0.05 \
                     --eps_stable_at=10_000 \
                     --total_epi=40_000 \
-                    --gamma=0.99 \
+                    --gamma=1.0 \
                     --a_rnn_layer_size=32 \
                     --c_rnn_layer_size=64 \
                     --h0_speed_ps 27 20 20 20 \
