@@ -7,13 +7,15 @@
 #SBATCH --mem=64G
 #SBATCH --output=discovery/results/%j/myjob.%j.out
 
-`module load anaconda3/2022.05`
+module load anaconda3/2022.05
 
-`source activate /scratch/lin.wo/macro_marl`
+source activate /scratch/lin.wo/macro_marl
 
-echo `date +%Y%m%d-%H%M%S`
+# Improved date format for clarity and added message for start and end of the job
+echo "Job started at: $(date '+%Y-%m-%d %H:%M:%S')"
 
-echo "[.](http://main.py/)/mac_ippo.sh"
+# Corrected echo statement for script execution (removed incorrect markdown link)
+echo "Executing mac_ippo.sh"
 ./mac_ippo.sh
 
-echo `date +%Y%m%d-%H%M%S`
+echo "Job ended at: $(date '+%Y-%m-%d %H:%M:%S')"
