@@ -16,7 +16,7 @@ class Learner(object):
                  controller, 
                  memory, 
                  gamma, 
-                 ippo_clip_value=0.2, 
+                 ippo_clip_value=0.1, 
                  ippo_epochs=1, 
                  obs_last_action=False,
                  a_lr=1e-2, 
