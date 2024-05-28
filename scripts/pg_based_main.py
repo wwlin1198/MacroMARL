@@ -7,7 +7,7 @@ import os
 import pickle
 import time
 
-from macro_marl.algs import MacIAC, MacIPPO, MacCAC, NaiveMacIACC, NaiveMacIASC, MacIAICC, MacIAISC
+from macro_marl.algs import MacIAC, MacIPPO, MacMAPPO, MacCAC, NaiveMacIACC, NaiveMacIASC, MacIAICC, MacIAISC
 from macro_marl import my_env
 from gym_macro_overcooked.macActEnvWrapper import MacEnvWrapper
 
@@ -15,6 +15,7 @@ algs = {
         'MacIAC': MacIAC,
         'MacCAC': MacCAC,
         'MacIPPO':MacIPPO,
+        'MacMAPPO':MacMAPPO,
         'NaiveMacIACC': NaiveMacIACC,
         'NaiveMacIASC': NaiveMacIASC,
         'MacIAICC': MacIAICC,
@@ -107,10 +108,10 @@ if __name__ == '__main__':
     # Hyper-params
     parser.add_argument('--total_epi',              action='store',        type=int,             default=40*1000,       help='Number of training episodes')
     parser.add_argument('--gamma',                  action='store',        type=float,           default=0.95,          help='Discount factor')
-    parser.add_argument('--ippo_clip_value',        action='store',        type=float,           default=0.1,         
-    help='Independent PPO Clip Value')
-    parser.add_argument('--ippo_epochs',            action='store',        type=int,             default=4,         
-    help='Independent PPO Episodes')
+    parser.add_argument('--ppo_clip_value',        action='store',        type=float,           default=0.1,         
+    help='PPO Clip Value')
+    parser.add_argument('--ppo_epochs',            action='store',        type=int,             default=4,         
+    help='PPO Episodes')
     parser.add_argument('--a_lr',                   action='store',        type=float,           default=0.0001,        help='Actor learning rate')
     parser.add_argument('--c_lr',                   action='store',        type=float,           default=0.001,         help='Critic learning rate')
     parser.add_argument('--c_train_iteration',      action='store',        type=int,             default=1,             help='Iteration for training critic')

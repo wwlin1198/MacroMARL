@@ -1,15 +1,15 @@
 import time
 import numpy as np
 
-from macro_marl.cores.pg_based.mac_ippo.memory import Memory_epi, Memory_rand
-from macro_marl.cores.pg_based.mac_ippo.controller import MAC
-from macro_marl.cores.pg_based.mac_ippo.envs_runner import EnvsRunner
-from macro_marl.cores.pg_based.mac_ippo.learner import Learner
-from macro_marl.cores.pg_based.mac_ippo.utils import Linear_Decay, save_train_data, save_test_data, save_checkpoint, load_checkpoint, save_policies
+from macro_marl.cores.pg_based.mac_mappo.memory import Memory_epi, Memory_rand
+from macro_marl.cores.pg_based.mac_mappo.controller import MAC
+from macro_marl.cores.pg_based.mac_mappo.envs_runner import EnvsRunner
+from macro_marl.cores.pg_based.mac_mappo.learner import Learner
+from macro_marl.cores.pg_based.mac_mappo.utils import Linear_Decay, save_train_data, save_test_data, save_checkpoint, load_checkpoint, save_policies
 
 import wandb
 
-class MacIPPO(object):
+class MacMAPPO(object):
 
     def __init__(self,
             env,
@@ -103,7 +103,7 @@ class MacIPPO(object):
         self.eval_returns = []
 
         wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
-        wandb.init(project='MAC_IPPO_warehouseE_v1')
+        wandb.init(project='mac_mappo_warehouseE_v1')
 
 
     def learn(self):

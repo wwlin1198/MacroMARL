@@ -57,7 +57,8 @@ class Learner(object):
 
         batch, trace_len, epi_len = self.memory.sample()
         batch_size = len(batch)
-
+        print("batch len",len(batch))
+        print("batch size",batch_size)
         ############################# train centralized critic ###################################
         cen_batch = self._cat_joint_exps(batch)
         cen_batch, cen_trace_len, cen_epi_len = self._squeeze_cen_exp(cen_batch, 
@@ -113,10 +114,10 @@ class Learner(object):
         if adv_hys:
             adv_value = torch.max(adv_value*adv_hys_value, adv_value)
         assert adv_value.shape[0:2] == mac_v_b.shape[0:2], "Shapes don't match for masking out adv for each agent ..."
-
         ##############################  calculate actor loss and optimize actors ####################################
 
         dec_batches = self._sep_joint_exps(batch)
+        print("dec_batches", len(dec_batches))
         dec_batches, dec_trace_lens, dec_epi_lens = self._squeeze_dec_exp(dec_batches, 
                                                                           batch_size, 
                                                                           trace_len, 
@@ -233,10 +234,14 @@ class Learner(object):
         squ_dec_batches = []
         squ_epi_lens = []
         squ_trace_lens = []
+        
+        print(len(dec_batches),batch_size,trace_len,len(adv_value),len(j_padded_mac_v_b))
 
         for idx, batch in enumerate(dec_batches):
             # seperate elements in the batch
+            
             obs_b, action_b, reward_b, next_obs_b, terminate_b, mac_valid_b, exp_valid_b = zip(*batch)
+            print(len(batch))
             assert len(obs_b) == trace_len * batch_size, "number of states mismatch ..."
             assert len(next_obs_b) == trace_len * batch_size, "number of next states mismatch ..."
             o_b = torch.cat(obs_b).view(batch_size, trace_len, -1)

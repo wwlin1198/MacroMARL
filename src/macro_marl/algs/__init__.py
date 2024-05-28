@@ -9,3 +9,4 @@ from .pg_based.mac_niacc_sV import NaiveMacIASC
 from .pg_based.mac_iaicc_V import MacIAICC
 from .pg_based.mac_iaicc_sV import MacIAISC
 from .pg_based.mac_ippo import MacIPPO
+from .pg_based.mac_mappo import MacMAPPO

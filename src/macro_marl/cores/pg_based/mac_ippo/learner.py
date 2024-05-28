@@ -16,8 +16,8 @@ class Learner(object):
                  controller, 
                  memory, 
                  gamma, 
-                 ippo_clip_value=0.1, 
-                 ippo_epochs=1, 
+                 ppo_clip_value=0.1, 
+                 ppo_epochs=1, 
                  obs_last_action=False,
                  a_lr=1e-2, 
                  c_lr=1e-2,
@@ -40,8 +40,8 @@ class Learner(object):
         self.c_lr = c_lr
         self.c_train_iteration = c_train_iteration
         self.c_target_update_freq = c_target_update_freq
-        self.ippo_epochs = ippo_epochs
-        self.ippo_clip_value = ippo_clip_value
+        self.ppo_epochs = ppo_epochs
+        self.ppo_clip_value = ppo_clip_value
         self.obs_last_action = obs_last_action
         self.tau = tau
         self.grad_clip_value = grad_clip_value
@@ -52,11 +52,12 @@ class Learner(object):
         self.device = device
 
         self._set_optimizer()
+  
 
-    def train(self, eps, ippo_clip_value, ippo_epochs):
+    def train(self, eps, ppo_clip_value, ppo_epochs):
 
         # Debugging outputs
-        # print(f"clip value: {ippo_clip_value}, episodes {ippo_epochs}")
+        # print(f"clip value: {ppo_clip_value}, episodes {ppo_epochs}")
         
         batch, trace_len, epi_len = self.memory.sample()
         batch_size = len(batch)
@@ -92,7 +93,7 @@ class Learner(object):
                 adv_values[t] = delta[t] + 0.99 * 0.95 * adv_values[t + 1]
         adv_value = (adv_values - adv_values.mean()) / (adv_values.std() + 1e-10)
         # PPO updates
-        for _ in range(ippo_epochs):
+        for _ in range(ppo_epochs):
             # for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
                 
             #     obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
@@ -139,7 +140,7 @@ class Learner(object):
             
             ratios = torch.exp(new_log_pi_a - old_log_pi_a)  # Calculating the ratio (pi_theta / pi_theta__old)
             surr1 = ratios * adv_value
-            surr2 = torch.clamp(ratios, 1 - ippo_clip_value, 1 + ippo_clip_value) * adv_value
+            surr2 = torch.clamp(ratios, 1 - ppo_clip_value, 1 + ppo_clip_value) * adv_value
             
             pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                 trace_len, 
