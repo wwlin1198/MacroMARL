@@ -133,7 +133,7 @@ class Learner(object):
             # Calculate the critic loss using both the clipped and original value estimates
             value_loss_unclipped = F.mse_loss(Gt, V_value)
             value_loss_clipped = F.mse_loss(Gt, V_clipped)
-            joint_critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
+            joint_critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped)) / exp_valid.mean()
             
             self.joint_critic_optimizer.zero_grad()
             joint_critic_loss.backward()
