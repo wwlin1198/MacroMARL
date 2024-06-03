@@ -18,7 +18,7 @@ class Learner(object):
                  memory, 
                  gamma, 
                  ppo_clip_value=0.1, 
-                 ppo_epochs=1, 
+                 ppo_epochs=3, 
                  obs_last_action=False,
                  a_lr=1e-2, 
                  c_lr=1e-2,
@@ -84,6 +84,13 @@ class Learner(object):
         delta = Gt - V_value
         adv_values = torch.zeros_like(delta)  # Initialize advantage values tensor  
         # print("adv values", adv_values.shape) 
+                # Compute advantages using GAE formula
+        for t in reversed(range(len(delta))):
+            if t == len(delta) - 1:
+                adv_values[t] = delta[t]
+            else:
+                adv_values[t] = delta[t] + 0.99 * 0.95 * adv_values[t + 1]
+        adv_values = (adv_values - adv_values.mean()) / (adv_values.std() + 1e-10)
         assert adv_values.shape[0:2] == mac_v_b.shape[0:2], "Shapes don't match for masking out adv for each agent ..."
         #################### decentralized batch for actor #######################################
  
@@ -108,13 +115,7 @@ class Learner(object):
         action_logits = agent.actor_net(obs, eps=eps)[0].detach()
         old_log_pi_a = action_logits.gather(-1, action)
 
-        # Compute advantages using GAE formula
-        for t in reversed(range(len(delta))):
-            if t == len(delta) - 1:
-                adv_values[t] = delta[t]
-            else:
-                adv_values[t] = delta[t] + 0.99 * 0.95 * adv_values[t + 1]
-        adv_value = (adv_values - adv_values.mean()) / (adv_values.std() + 1e-10)
+
         ##########################################################################################################################
         #PPO updates
         for _ in range(ppo_epochs):
