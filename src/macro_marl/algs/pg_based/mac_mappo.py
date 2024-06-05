@@ -103,7 +103,7 @@ class MacMAPPO(object):
         self.eval_returns = []
 
         wandb.login(key='1953b06a2318828bc531085d9e76a250f82840fd')
-        wandb.init(project='mac_mappo_warehouseE_v1')
+        wandb.init(project='mac_mappo_warehouseE_v5')
 
 
     def learn(self):
@@ -149,14 +149,14 @@ class MacMAPPO(object):
                 self.learner.update_actor_target_net()
 
         ################################ saving in the end ###################################
-        save_train_data(self.run_id, self.envs_runner.train_returns, self.save_dir)
-        save_test_data(self.run_id, self.eval_returns, self.save_dir)
-        save_checkpoint(self.run_id, 
-                        epi_count, 
-                        self.eval_returns, 
-                        self.controller, 
-                        self.envs_runner, 
-                        self.save_dir)
+        # save_train_data(self.run_id, self.envs_runner.train_returns, self.save_dir)
+        # save_test_data(self.run_id, self.eval_returns, self.save_dir)
+        # save_checkpoint(self.run_id, 
+        #                 epi_count, 
+        #                 self.eval_returns, 
+        #                 self.controller, 
+        #                 self.envs_runner, 
+        #                 self.save_dir)
         self.envs_runner.close()
 
         print(f"{[self.run_id]} Finish Training ... ", flush=True)

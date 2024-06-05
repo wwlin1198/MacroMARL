@@ -18,7 +18,7 @@ class Learner(object):
                  memory, 
                  gamma, 
                  ppo_clip_value=0.1, 
-                 ppo_epochs=3, 
+                 ppo_epochs=4, 
                  obs_last_action=False,
                  a_lr=1e-2, 
                  c_lr=1e-2,
