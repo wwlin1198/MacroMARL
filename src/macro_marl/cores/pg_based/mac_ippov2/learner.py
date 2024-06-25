@@ -60,19 +60,23 @@ class Learner(object):
         batch_size = len(batch)
         
         dec_batches = self._sep_joint_exps(batch)
-        dec_batches, trace_lens, epi_lens = self._squeeze_dec_exp(dec_batches, batch_size, trace_len)
-        
+        dec_batches, trace_lens, epi_lens = self._squeeze_dec_exp(self.controller.agents,
+                                                                  dec_batches, 
+                                                                  batch_size, 
+                                                                  trace_len)
         for agent, batch, trace_len, epi_len in zip(self.controller.agents, dec_batches, trace_lens, epi_lens):
-            obs, jobs, action, reward, n_jobs, terminate, discount, exp_valid = batch 
+            obs, jobs, action, reward, terminate, discount, exp_valid, bootstrap, mac_st = batch 
+ 
             if obs.shape[1] == 0:
                 continue
-
+            
             action_logits = agent.actor_net(obs, eps=eps)[0].detach()
 
             old_log_pi_a = action_logits.gather(-1, action)
 
-            Gt = self._get_discounted_return(reward, torch.cat([jobs[:, 0].unsqueeze(1), n_jobs], dim=1), terminate, epi_len, agent.critic_tgt_net)
-            V_value = agent.critic_net(jobs)[0].detach()  # prevent gradients from going into critic from actor updates
+            Gt = self._get_discounted_return(reward, bootstrap, terminate, epi_len)
+            V_value = torch.split_with_sizes(agent.critic_net(jobs)[0].detach()[mac_st], list(epi_len))
+            V_value = pad_sequence(V_value, padding_value=torch.tensor(0.0), batch_first=True).to(self.device)  # prevent gradients from going into critic from actor updates
             delta = Gt - V_value
             adv_values = torch.zeros_like(delta)  # Initialize advantage values tensor
 
@@ -88,11 +92,10 @@ class Learner(object):
             for _ in range(ppo_epochs):
                 ##############################  calculate critic loss and optimize the critic_net ####################################
                 # NOTE WE SHOULD NOT BACKPROPAGATE CRITIC_NET BY N_STATE
-                Gt = self._get_discounted_return(reward,torch.cat([jobs[:,0].unsqueeze(1),
-                                                n_jobs],
-                                                dim=1), terminate, epi_len, agent.critic_tgt_net) 
+                Gt = self._get_discounted_return(reward, bootstrap, terminate, epi_len) 
 
-                V_value = agent.critic_net(jobs)[0]
+                V_value = torch.split_with_sizes(agent.critic_net(jobs)[0][mac_st], list(epi_len))
+                V_value = pad_sequence(V_value, padding_value=torch.tensor(0.0), batch_first=True).to(self.device)
                 
                 # Clipped value function
                 value_clip_margin = 0.2
@@ -101,7 +104,7 @@ class Learner(object):
                 # Calculate the critic loss using both the clipped and original value estimates
                 value_loss_unclipped = F.mse_loss(Gt, V_value)
                 value_loss_clipped = F.mse_loss(Gt, V_clipped)
-                agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped))
+                agent.critic_loss = torch.mean(exp_valid * torch.max(value_loss_unclipped, value_loss_clipped)) / exp_valid.mean()
                 
                 agent.critic_optimizer.zero_grad()
                 agent.critic_loss.backward()
@@ -123,7 +126,7 @@ class Learner(object):
                 pi_entropy = torch.distributions.Categorical(logits=action_logits).entropy().view(obs.shape[0], 
                                                                                     trace_len, 
                                                                                     1)
-                agent.actor_loss = -torch.mean(exp_valid * torch.min(surr1, surr2))
+                agent.actor_loss =  -torch.sum(exp_valid * torch.min(surr1, surr2)).mean() / exp_valid.mean() 
 
                 agent.actor_optimizer.zero_grad()
                 if self.grad_clip_value:

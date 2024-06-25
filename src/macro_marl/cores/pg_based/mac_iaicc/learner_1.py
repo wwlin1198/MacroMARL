@@ -13,6 +13,8 @@ class Learner_1(Learner):
 
     """
     V(h), where h is from the joint obs at any moment when any agent got new obs;
+    
+    THIS IS THE MAIN LEARNER FOR MAC-IAICC not learner.py
     """
 
     def __init__(self, *args, **kwargs):
