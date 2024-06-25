@@ -13,10 +13,10 @@ trap cleanup SIGINT
 
 
 # Overcooked-A
-for ((i=0; i<2; i++))
+for ((i=0; i<3; i++))
 do
     pg_based_main.py --save_dir='iaicc_overcooked_A' \
-                                --alg='MacIPPO' \
+                                --alg='MacMAPPO' \
                                 --env_id='Overcooked-MA-v1' \
                                 --n_agent=3 \
                                 --l_mode=0 \
@@ -44,35 +44,4 @@ do
                                 --c_rnn_layer_size=64 & 
 done
 
-# # Overcooked-C
-# for ((i=0; i<20; i++))
-# do
-#     pg_based_main.py --save_dir='iaicc_overcooked_C' \
-#                                 --alg='MacIPPO' \
-#                                 --env_id='Overcooked-MA-v1' \
-#                                 --n_agent=3 \
-#                                 --l_mode=0 \
-#                                 --env_terminate_step=200 \
-#                                 --a_lr=0.0004 \
-#                                 --c_lr=0.0004 \
-#                                 --train_freq=8 \
-#                                 --n_env=8 \
-#                                 --c_target_update_freq=32 \
-#                                 --n_step_TD=5 \
-#                                 --grad_clip_norm=0 \
-#                                 --eps_start=1.0 \
-#                                 --eps_end=0.05 \
-#                                 --eps_stable_at=20_000 \
-#                                 --total_epi=100_000 \
-#                                 --grid_dim 7 7 \
-#                                 --gamma=0.99 \
-#                                 --eval_policy \
-#                                 --sample_epi \
-#                                 --run_id=$i \
-#                                 --task=6 \
-#                                 --map_type=C \
-#                                 --step_penalty=-0.1 \
-#                                 --c_mlp_layer_size 128 64 \
-#                                 --c_rnn_layer_size=64 & 
-# done
 wait

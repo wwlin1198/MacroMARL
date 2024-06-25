@@ -110,7 +110,7 @@ trap cleanup SIGINT
 for ((i=0; i<2; i++))
 do
     pg_based_main.py --save_dir='ma_iaicc_warehouse_D' \
-                    --alg='MacIPPO' \
+                    --alg='MacIPPOV2' \
                     --run_id=$i \
                     --env_id='OSD-T-v1' \
                     --n_agent=4 \

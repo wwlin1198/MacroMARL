@@ -133,6 +133,7 @@ class MacIAICC(object):
                 assert len(self.envs_runner.eval_returns) >= self.eval_num_epi, "Not evaluate enough episodes ..."
                 self.eval_returns.append(np.mean(self.envs_runner.eval_returns[-self.eval_num_epi:]))
                 self.envs_runner.eval_returns = []
+                wandb.log({'mean_return':self.eval_returns[-1],'episodes': epi_count})
                 print(f"{[self.run_id]} Finished: {epi_count}/{self.total_epi} Evaluate learned policies with averaged returns {self.eval_returns[-1]} ...", flush=True)
                 # save the best policy
                 if self.eval_returns[-1] == np.max(self.eval_returns):

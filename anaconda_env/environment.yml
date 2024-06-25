@@ -134,7 +134,7 @@ dependencies:
       - typing-extensions==4.9.0
       - tzdata==2024.1
       - urllib3==2.2.1
-      - wandb==0.16.6
+      - wandb>=0.16.6
       - wcwidth==0.2.13
       - zeroconf==0.132.2
       - zipp==3.18.1

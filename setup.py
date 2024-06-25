@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='macro_marl',
-    version='0.0.2',
+    version='0.0.1',
     description='macro_marl - Macro-action-based multi-agent reinforcement learning',
     packages=['macro_marl'],
     package_dir={'': 'src'},
@@ -17,7 +17,7 @@ setup(
     ],
     
     install_requires=[
-        'wandb==0.16.6',
+        'wandb>=0.16.6',
     ],
 
     license='MIT',

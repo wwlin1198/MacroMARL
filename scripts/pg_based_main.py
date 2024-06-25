@@ -7,7 +7,7 @@ import os
 import pickle
 import time
 
-from macro_marl.algs import MacIAC, MacIPPO, MacMAPPO, MacCAC, NaiveMacIACC, NaiveMacIASC, MacIAICC, MacIAISC
+from macro_marl.algs import MacIAC, MacIPPO, MacMAPPO, MacCAC, NaiveMacIACC, NaiveMacIASC, MacIAICC, MacIAISC, MacIPPOV2
 from macro_marl import my_env
 from gym_macro_overcooked.macActEnvWrapper import MacEnvWrapper
 
@@ -15,6 +15,7 @@ algs = {
         'MacIAC': MacIAC,
         'MacCAC': MacCAC,
         'MacIPPO':MacIPPO,
+        'MacIPPOV2':MacIPPOV2,
         'MacMAPPO':MacMAPPO,
         'NaiveMacIACC': NaiveMacIACC,
         'NaiveMacIASC': NaiveMacIASC,
